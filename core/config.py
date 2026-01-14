@@ -26,14 +26,17 @@ load_dotenv()
 # ==================== 配置模型定义 ====================
 
 class BasicConfig(BaseModel):
-    """基础配置"""
     api_key: str = Field(default="", description="API访问密钥（留空则公开访问）")
     base_url: str = Field(default="", description="服务器URL（留空则自动检测）")
     proxy: str = Field(default="", description="代理地址")
     google_mail: str = Field(default="noreply-googlecloud@google.com", description="谷歌发件邮箱地址")
-    mail_api: str = Field(default="", description="临时邮箱API地址")
-    mail_admin_key: str = Field(default="", description="临时邮箱管理员密钥")
-    email_domain: list = Field(default=[], description="临时邮箱域名")
+    mail_api: str = Field(default="", description="Cloudflare邮箱API地址")
+    mail_admin_key: str = Field(default="", description="Cloudflare邮箱管理员密钥")
+    email_domain: list = Field(default=[], description="Cloudflare邮箱域名列表")
+    chatgpt_mail_api: str = Field(default="", description="ChatGPT Mail API地址")
+    chatgpt_mail_key: str = Field(default="", description="ChatGPT Mail API密钥")
+    mail_provider: str = Field(default="cloudflare", description="邮箱服务类型 (cloudflare/chatgpt)")
+    mail_provider_supports_refresh: bool = Field(default=True, description="邮箱服务是否支持刷新token")
     register_number: int = Field(default=5, ge=1, le=100, description="注册临时邮箱数量")
 
 
@@ -149,10 +152,14 @@ class ConfigManager:
             api_key=basic_data.get("api_key") or os.getenv("API_KEY", ""),
             base_url=basic_data.get("base_url") or os.getenv("BASE_URL", ""),
             proxy=basic_data.get("proxy") or os.getenv("PROXY", ""),
-            google_mail=basic_data.get("google_mail") or os.getenv("GOOGLE_MAIL", ""),
+            google_mail=basic_data.get("google_mail") or os.getenv("GOOGLE_MAIL", "noreply-googlecloud@google.com"),
             mail_api=basic_data.get("mail_api") or os.getenv("MAIL_API", ""),
             mail_admin_key=basic_data.get("mail_admin_key") or os.getenv("MAIL_ADMIN_KEY", ""),
             email_domain=email_domain_value,
+            chatgpt_mail_api=basic_data.get("chatgpt_mail_api") or os.getenv("CHATGPT_MAIL_API", ""),
+            chatgpt_mail_key=basic_data.get("chatgpt_mail_key") or os.getenv("CHATGPT_MAIL_KEY", ""),
+            mail_provider=basic_data.get("mail_provider") or os.getenv("MAIL_PROVIDER", "cloudflare"),
+            mail_provider_supports_refresh=basic_data.get("mail_provider_supports_refresh", True) if "mail_provider_supports_refresh" in basic_data else os.getenv("MAIL_PROVIDER_SUPPORTS_REFRESH", "true").lower() == "true",
             register_number=basic_data.get("register_number") or int(os.getenv("REGISTER_NUMBER", 5))
         )
 

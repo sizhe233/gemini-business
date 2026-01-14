@@ -23,6 +23,7 @@ import requests
 from dotenv import load_dotenv
 
 from util.gemini_auth_utils import GeminiAuthConfig, GeminiAuthHelper
+from util.mail_providers import create_mail_provider_from_config, MailProvider
 
 # 加载环境变量
 load_dotenv()
@@ -67,9 +68,7 @@ class RegisterTask:
 
 
 class RegisterService:
-    """注册服务 - 管理注册任务"""
 
-    # 姓名池
     NAMES = [
         "James Smith", "John Johnson", "Robert Williams", "Michael Brown", "William Jones",
         "David Garcia", "Mary Miller", "Patricia Davis", "Jennifer Rodriguez", "Linda Martinez"
@@ -80,74 +79,38 @@ class RegisterService:
         self._tasks: Dict[str, RegisterTask] = {}
         self._current_task_id: Optional[str] = None
         self._email_queue: List[str] = []
-        # 数据目录配置（与 main.py 保持一致）
         if os.path.exists("/data"):
             self.output_dir = Path("/data")
         else:
             self.output_dir = Path("./data")
-
-        # 注意：不再在这里缓存 auth_config，改用 property 动态获取最新配置
-        # 这样前端修改邮箱配置后热更新能立即生效
-        pass
-
-        # 指定的域名（用于批量注册时指定域名）
         self._specified_domain: Optional[str] = None
+        self._mail_provider: Optional[MailProvider] = None
 
     @property
     def auth_config(self) -> GeminiAuthConfig:
-        """每次访问时动态获取最新配置，支持热更新"""
         return GeminiAuthConfig()
 
     @property
     def auth_helper(self) -> GeminiAuthHelper:
-        """每次访问时动态获取最新配置，支持热更新"""
         return GeminiAuthHelper(self.auth_config)
-    
+
+    @property
+    def mail_provider(self) -> Optional[MailProvider]:
+        if self._mail_provider is None:
+            self._mail_provider = create_mail_provider_from_config()
+        return self._mail_provider
+
     @staticmethod
     def _random_str(n: int = 10) -> str:
-        """生成随机字符串"""
         return "".join(random.sample(ascii_letters + digits, n))
-    
+
     def _create_email(self, domain: Optional[str] = None) -> Optional[str]:
-        """
-        创建临时邮箱
-
-        Args:
-            domain: 指定域名，如果为 None 则从配置的域名数组随机选择
-        """
-        if not self.auth_config.mail_api or not self.auth_config.admin_key:
-            logger.error("❌ 邮箱 API 未配置")
+        if self.mail_provider is None:
+            logger.error("❌ 邮箱服务未配置")
             return None
-
-        if not self.auth_config.email_domains:
-            logger.error("❌ 邮箱域名未配置")
-            return None
-
-        try:
-            # 如果未指定域名，从域名数组中随机选择一个
-            if not domain:
-                domain = random.choice(self.auth_config.email_domains)
-
-            json_data = {
-                "enablePrefix": False,
-                "name": self._random_str(10),
-                "domain": domain
-            }
-            r = requests.post(
-                f"{self.auth_config.mail_api}/admin/new_address",
-                headers={"x-admin-auth": self.auth_config.admin_key},
-                json=json_data,
-                timeout=30,
-                verify=False
-            )
-            if r.status_code == 200:
-                return r.json()['address']
-        except Exception as e:
-            logger.error(f"❌ 创建邮箱失败: {e}")
-        return None
+        return self.mail_provider.create_email(domain)
 
     def _get_email(self) -> Optional[str]:
-        """获取邮箱（优先从队列取，否则创建新邮箱）"""
         if self._email_queue:
             return self._email_queue.pop(0)
         return self._create_email(self._specified_domain)

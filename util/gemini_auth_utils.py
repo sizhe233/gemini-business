@@ -1,8 +1,6 @@
 """
 Gemini Business 认证工具类
 抽取注册和登录服务的公共逻辑，遵循 DRY 原则
-
-艹，把重复代码都提取到这里了，别再写重复的SB代码了！
 """
 import json
 import time
@@ -13,31 +11,31 @@ from datetime import datetime
 
 import requests
 from core.config import config
+from util.mail_providers import create_mail_provider_from_config, MailProvider
 
 logger = logging.getLogger("gemini.auth_utils")
 
 
 class GeminiAuthConfig:
-    """认证配置类（从统一配置模块加载）"""
-
     def __init__(self):
-        # 从统一配置模块读取
         self.mail_api = config.basic.mail_api
         self.admin_key = config.basic.mail_admin_key
-        self.email_domains = config.basic.email_domain  # 改为数组
+        self.email_domains = config.basic.email_domain
         self.google_mail = config.basic.google_mail
         self.login_url = config.security.login_url
+        self.mail_provider = config.basic.mail_provider
+        self.mail_provider_supports_refresh = config.basic.mail_provider_supports_refresh
+        self.chatgpt_mail_api = config.basic.chatgpt_mail_api
+        self.chatgpt_mail_key = config.basic.chatgpt_mail_key
 
     def validate(self) -> bool:
-        """验证配置是否完整"""
-        required = [self.mail_api, self.admin_key, self.google_mail, self.login_url]
+        required = [self.google_mail, self.login_url]
+        if self.mail_provider == "cloudflare":
+            required.extend([self.mail_api, self.admin_key])
         return all(required)
 
 
 class GeminiAuthHelper:
-    """Gemini 认证辅助工具"""
-
-    # XPath 配置（公共）
     XPATH = {
         "email_input": "/html/body/c-wiz/div/div/div[1]/div/div/div/form/div[1]/div[1]/div/span[2]/input",
         "continue_btn": "/html/body/c-wiz/div/div/div[1]/div/div/div/form/div[2]/div/button",
@@ -46,32 +44,19 @@ class GeminiAuthHelper:
 
     def __init__(self, config: GeminiAuthConfig):
         self.config = config
+        self._mail_provider: Optional[MailProvider] = None
+
+    @property
+    def mail_provider(self) -> Optional[MailProvider]:
+        if self._mail_provider is None:
+            self._mail_provider = create_mail_provider_from_config()
+        return self._mail_provider
 
     def get_verification_code(self, email: str, timeout: int = 60) -> Optional[str]:
-        """获取验证码（公共方法）"""
-        logger.info(f"⏳ 等待验证码 [{email}]...")
-        start = time.time()
-
-        while time.time() - start < timeout:
-            try:
-                r = requests.get(
-                    f"{self.config.mail_api}/admin/mails?limit=20&offset=0",
-                    headers={"x-admin-auth": self.config.admin_key},
-                    timeout=10,
-                    verify=False
-                )
-                if r.status_code == 200:
-                    emails = r.json().get('results', {})
-                    for mail in emails:
-                        if mail.get("address") == email and mail.get("source") == self.config.google_mail:
-                            metadata = json.loads(mail["metadata"])
-                            return metadata["ai_extract"]["result"]
-            except:
-                pass
-            time.sleep(2)
-
-        logger.error(f"❌ 验证码超时 [{email}]")
-        return None
+        if self.mail_provider is None:
+            logger.error("❌ 邮箱服务未配置")
+            return None
+        return self.mail_provider.get_verification_code(email, self.config.google_mail, timeout)
 
     def perform_email_verification(self, driver, wait, email: str) -> Dict[str, Any]:
         """
