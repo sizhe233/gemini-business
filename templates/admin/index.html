@@ -348,23 +348,56 @@
                                 <h3>📧 临时邮箱配置</h3>
                                 <div style="margin-top: 12px;">
                                     <div class="setting-item">
-                                        <label>邮箱 API 地址</label>
-                                        <input type="text" id="setting-mail-api" placeholder="临时邮箱 API 地址" />
+                                        <label>邮箱服务类型</label>
+                                        <select id="setting-mail-provider" onchange="toggleMailProviderFields()">
+                                            <option value="cloudflare">Cloudflare Worker</option>
+                                            <option value="chatgpt">ChatGPT Mail</option>
+                                        </select>
                                     </div>
                                     <div class="setting-item">
-                                        <label>邮箱管理员密钥</label>
-                                        <input type="text" id="setting-mail-admin-key" placeholder="临时邮箱管理员密钥" />
+                                        <label style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="checkbox" id="setting-mail-supports-refresh" style="width: auto;" checked />
+                                            支持刷新 Token（邮箱持久化）
+                                        </label>
+                                        <div style="margin-top: 4px; font-size: 11px; color: #6b6b6b;">
+                                            如果邮箱是临时的（用完即弃），请取消勾选
+                                        </div>
                                     </div>
+                                    
+                                    <!-- Cloudflare 配置 -->
+                                    <div id="cloudflare-config">
+                                        <div class="setting-item">
+                                            <label>Cloudflare 邮箱 API 地址</label>
+                                            <input type="text" id="setting-mail-api" placeholder="如 https://your-worker.workers.dev" />
+                                        </div>
+                                        <div class="setting-item">
+                                            <label>Cloudflare 邮箱管理员密钥</label>
+                                            <input type="text" id="setting-mail-admin-key" placeholder="临时邮箱管理员密钥" />
+                                        </div>
+                                        <div class="setting-item">
+                                            <label>邮箱域名列表（逗号分隔）</label>
+                                            <input type="text" id="setting-email-domain" placeholder="如 domain1.com,domain2.org,domain3.net" />
+                                            <div style="margin-top: 4px; font-size: 11px; color: #6b6b6b;">
+                                                支持多个域名，用英文逗号分隔，注册时会随机选择
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- ChatGPT Mail 配置 -->
+                                    <div id="chatgpt-config" style="display: none;">
+                                        <div class="setting-item">
+                                            <label>ChatGPT Mail API 地址</label>
+                                            <input type="text" id="setting-chatgpt-mail-api" placeholder="ChatGPT Mail API 地址" />
+                                        </div>
+                                        <div class="setting-item">
+                                            <label>ChatGPT Mail API 密钥</label>
+                                            <input type="text" id="setting-chatgpt-mail-key" placeholder="ChatGPT Mail API 密钥" />
+                                        </div>
+                                    </div>
+                                    
                                     <div class="setting-item">
                                         <label>谷歌发件邮箱</label>
                                         <input type="text" id="setting-google-mail" placeholder="如 noreply-googlecloud@google.com" />
-                                    </div>
-                                    <div class="setting-item">
-                                        <label>邮箱域名列表（逗号分隔）</label>
-                                        <input type="text" id="setting-email-domain" placeholder="如 domain1.com,domain2.org,domain3.net" />
-                                        <div style="margin-top: 4px; font-size: 11px; color: #6b6b6b;">
-                                            支持多个域名，用英文逗号分隔，注册时会随机选择
-                                        </div>
                                     </div>
                                     <div class="setting-item">
                                         <label>默认注册数量</label>

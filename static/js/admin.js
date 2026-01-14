@@ -1,6 +1,19 @@
 let currentConfig = null;
 
-            // 复制到剪贴板函数
+            function toggleMailProviderFields() {
+                const provider = document.getElementById('setting-mail-provider').value;
+                const cloudflareConfig = document.getElementById('cloudflare-config');
+                const chatgptConfig = document.getElementById('chatgpt-config');
+                
+                if (provider === 'cloudflare') {
+                    cloudflareConfig.style.display = 'block';
+                    chatgptConfig.style.display = 'none';
+                } else {
+                    cloudflareConfig.style.display = 'none';
+                    chatgptConfig.style.display = 'block';
+                }
+            }
+
             function copyToClipboard(text, button) {
                 navigator.clipboard.writeText(text).then(() => {
                     // 显示复制成功状态
@@ -265,11 +278,17 @@ let currentConfig = null;
                     document.getElementById('setting-base-url').value = settings.basic?.base_url || '';
                     document.getElementById('setting-proxy').value = settings.basic?.proxy || '';
 
-                    // 临时邮箱配置
+            // 临时邮箱配置
+                    document.getElementById('setting-mail-provider').value = settings.basic?.mail_provider || 'cloudflare';
+                    document.getElementById('setting-mail-supports-refresh').checked = settings.basic?.mail_provider_supports_refresh ?? true;
                     document.getElementById('setting-mail-api').value = settings.basic?.mail_api || '';
                     document.getElementById('setting-mail-admin-key').value = settings.basic?.mail_admin_key || '';
                     document.getElementById('setting-google-mail').value = settings.basic?.google_mail || '';
                     document.getElementById('setting-email-domain').value = settings.basic?.email_domain?.join(',') || '';
+                    document.getElementById('setting-chatgpt-mail-api').value = settings.basic?.chatgpt_mail_api || '';
+                    document.getElementById('setting-chatgpt-mail-key').value = settings.basic?.chatgpt_mail_key || '';
+                    document.getElementById('setting-register-number').value = settings.basic?.register_number || 5;
+                    toggleMailProviderFields();
                     document.getElementById('setting-register-number').value = settings.basic?.register_number || 5;
 
                     // 图片生成配置
@@ -306,14 +325,18 @@ let currentConfig = null;
                     });
 
                     const settings = {
-                        basic: {
+                    basic: {
                             api_key: document.getElementById('setting-api-key').value,
                             base_url: document.getElementById('setting-base-url').value,
                             proxy: document.getElementById('setting-proxy').value,
+                            mail_provider: document.getElementById('setting-mail-provider').value,
+                            mail_provider_supports_refresh: document.getElementById('setting-mail-supports-refresh').checked,
                             mail_api: document.getElementById('setting-mail-api').value,
                             mail_admin_key: document.getElementById('setting-mail-admin-key').value,
                             google_mail: document.getElementById('setting-google-mail').value,
                             email_domain: document.getElementById('setting-email-domain').value.split(',').map(d => d.trim()).filter(d => d),
+                            chatgpt_mail_api: document.getElementById('setting-chatgpt-mail-api').value,
+                            chatgpt_mail_key: document.getElementById('setting-chatgpt-mail-key').value,
                             register_number: parseInt(document.getElementById('setting-register-number').value) || 5
                         },
                         image_generation: {
