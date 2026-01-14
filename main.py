@@ -1207,6 +1207,21 @@ if PATH_PREFIX:
     async def admin_update_settings_prefixed(request: Request, new_settings: dict = Body(...)):
         return await admin_update_settings(request=request, new_settings=new_settings)
 
+    @app.post(f"/{PATH_PREFIX}/register/start")
+    @require_login()
+    async def admin_start_register_prefixed(request: Request, count: int = Body(default=1, ge=1, le=50), domain: Optional[str] = Body(default=None)):
+        return await admin_start_register(request=request, count=count, domain=domain)
+
+    @app.get(f"/{PATH_PREFIX}/register/task/{{task_id}}")
+    @require_login()
+    async def admin_get_register_task_prefixed(request: Request, task_id: str):
+        return await admin_get_register_task(request=request, task_id=task_id)
+
+    @app.get(f"/{PATH_PREFIX}/register/current")
+    @require_login()
+    async def admin_get_current_register_task_prefixed(request: Request):
+        return await admin_get_current_register_task(request=request)
+
 # ---------- API端点（API Key认证） ----------
 
 @app.get("/v1/models")
