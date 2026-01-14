@@ -221,7 +221,6 @@ class ChatGPTMailProvider(MailProvider):
         return None
 
     def get_verification_code(self, email: str, sender: str, timeout: int = 60) -> Optional[str]:
-        """获取验证码（通过解析 HTML 中的 span.verification-code）"""
         logger.info(f"⏳ [ChatGPT Mail] 等待验证码 [{email}]...")
         start = time.time()
 
@@ -235,19 +234,34 @@ class ChatGPTMailProvider(MailProvider):
                 )
 
                 if r.status_code == 200:
-                    emails = r.json().get('data', {}).get('emails', [])
+                    response_data = r.json()
+                    emails = response_data.get('data', {}).get('emails', [])
+                    
                     if emails:
-                        # 获取最新邮件的 HTML 内容
-                        html = emails[0].get('html_content') or emails[0].get('content', '')
-                        soup = BeautifulSoup(html, 'html.parser')
-
-                        # 查找验证码 span
-                        span = soup.find('span', class_='verification-code')
-                        if span:
-                            code = span.get_text().strip()
-                            if len(code) == 6:  # 验证码通常是 6 位
-                                logger.info(f"✅ [ChatGPT Mail] 验证码获取成功: {code}")
+                        latest_email = emails[0]
+                        html = latest_email.get('html_content') or latest_email.get('content', '')
+                        
+                        if html:
+                            soup = BeautifulSoup(html, 'html.parser')
+                            span = soup.find('span', class_='verification-code')
+                            if span:
+                                code = span.get_text().strip()
+                                if len(code) == 6:
+                                    logger.info(f"✅ [ChatGPT Mail] 验证码获取成功: {code}")
+                                    return code
+                            
+                            import re
+                            code_match = re.search(r'\b(\d{6})\b', html)
+                            if code_match:
+                                code = code_match.group(1)
+                                logger.info(f"✅ [ChatGPT Mail] 验证码(正则匹配)获取成功: {code}")
                                 return code
+                        else:
+                            logger.debug(f"[ChatGPT Mail] 邮件内容为空: {latest_email.get('subject', 'no subject')}")
+                    else:
+                        logger.debug(f"[ChatGPT Mail] 暂无邮件")
+                else:
+                    logger.debug(f"[ChatGPT Mail] API 响应错误: {r.status_code}")
 
             except Exception as e:
                 logger.debug(f"[ChatGPT Mail] 获取邮件异常: {e}")
