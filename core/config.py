@@ -120,11 +120,12 @@ class ConfigManager:
         yaml_data = self._load_yaml()
 
         # 2. 加载安全配置（仅从环境变量，不允许 Web 修改）
+        default_login_url = "https://auth.business.gemini.google/login?continueUrl=https:%2F%2Fbusiness.gemini.google%2F&wiffid=CAoSJDIwNTlhYzBjLTVlMmMtNGUxZS1hY2JkLThmOGY2ZDE0ODM1Mg"
         security_config = SecurityConfig(
             admin_key=os.getenv("ADMIN_KEY", ""),
             path_prefix=os.getenv("PATH_PREFIX", ""),
             session_secret_key=os.getenv("SESSION_SECRET_KEY", self._generate_secret()),
-            login_url=os.getenv("LOGIN_URL", ""),
+            login_url=os.getenv("LOGIN_URL", "") or default_login_url,
         )
 
         # 3. 加载基础配置（YAML > 环境变量 > 默认值）
