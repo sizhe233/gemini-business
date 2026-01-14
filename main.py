@@ -841,10 +841,14 @@ async def admin_get_settings(request: Request):
             "api_key": config.basic.api_key,
             "base_url": config.basic.base_url,
             "proxy": config.basic.proxy,
+            "mail_provider": config.basic.mail_provider,
+            "mail_provider_supports_refresh": config.basic.mail_provider_supports_refresh,
             "mail_api": config.basic.mail_api,
             "mail_admin_key": config.basic.mail_admin_key,
             "google_mail": config.basic.google_mail,
             "email_domain": config.basic.email_domain,
+            "chatgpt_mail_api": config.basic.chatgpt_mail_api,
+            "chatgpt_mail_key": config.basic.chatgpt_mail_key,
             "register_number": config.basic.register_number
         },
         "image_generation": {
